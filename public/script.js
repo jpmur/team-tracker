@@ -1,22 +1,6 @@
-
-const home = document.getElementById("button_Olive");
-const office = document.querySelector(".office-button");
-
-function buttonPressHome(buttonId) {
-    console.log(buttonId);
-    button = document.getElementById(buttonId);
-    button.style.backgroundColor = "lightblue";
-}
-
-function buttonPressHome(buttonId) {
-    console.log(buttonId);
-    button = document.getElementById(buttonId);
-    button.style.backgroundColor = "lightblue";
-}
-
-
-const USER_HEIGHT = 65;
-const team = ["Olive", "Jason", "Salem", "Naman", "Stephen", "Eoin", "Diarmuid"];
+const USER_HEIGHT = 65; // height of main box added for each user
+const days = ["Mon", "Tues", "Wed", "Thurs", "Fri"];
+const team = ["Olive", "Jason", "Salem", "Naman", "Stephen", "Eoin", "Diarmuid", "mcj"];
 
 document.addEventListener('DOMContentLoaded', function() {
     const boxHeight = (team.length * USER_HEIGHT);
@@ -33,36 +17,68 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     team.forEach((member, teamIdx) => {
-        for (let i = 0; i < 5; i++) {
+        days.forEach((day, dayIdx) => {
             // add home buttons for each user
             var buttonHome = document.createElement("button");
-            buttonHome.id = "buttonHome" + i +"_" + member;
+            buttonHome.id = `buttonHome${day}_${member}`;
             buttonHome.style.position = "absolute";
             buttonHome.style.border = "none";
             buttonHome.style.borderRadius = "4px";
             buttonHome.style.cursor = "pointer";
             buttonHome.textContent = "Home";
-            buttonHome.style.left = (150 + (i*160) - (i*28)).toString() + "px";
+            buttonHome.style.padding = "7px";
+            buttonHome.style.left = (152 + (dayIdx*160) - (dayIdx*28)).toString() + "px";
             buttonHome.addEventListener("click", () => {
-                buttonPressHome("buttonHome" + (i) + "_" + team[teamIdx]);
-            })
+                buttonPressHome("buttonHome" + (day) + "_" + team[teamIdx]);
+            });
+
             // add office buttons for each user
             var buttonOffice = document.createElement("button");
-            buttonOffice.id = "buttonOffice" + i +"_" + member;
+            buttonOffice.id = `buttonOffice${day}_${member}`;
             buttonOffice.style.position = "absolute";
             buttonOffice.style.border = "none";
             buttonOffice.style.borderRadius = "4px";
             buttonOffice.style.cursor = "pointer";
             buttonOffice.textContent = "Office";
-            buttonOffice.style.left = (205 + (i*160) - (i*28)).toString() + "px";
-            buttonOffice.onclick = function() {
-                alert("officeButtonClicked");
-            }
+            buttonOffice.style.padding = "7px";
+            buttonOffice.style.left = (207 + (dayIdx*160) - (dayIdx*28)).toString() + "px";
+            buttonOffice.addEventListener("click", () => {
+                buttonPressOffice("buttonOffice" + (day) + "_" + team[teamIdx]);
+            });
+
             document.getElementById("user_" + member).appendChild(buttonHome);
             document.getElementById("user_" + member).appendChild(buttonOffice);
-
-        };   
+        });   
     });
-    
 });
+
+
+function buttonPressHome(buttonId) {
+    clickedButton = document.getElementById(buttonId);
+    // if button has already been clicked, remove colour, else add colour
+    if(clickedButton.style.backgroundColor == "lightblue"){
+        clickedButton.style.backgroundColor = "#ECEFF1"
+    }
+    else {clickedButton.style.backgroundColor = "lightblue";}
+
+    // remove colour from corresponding office button for that day
+    otherButton = document.getElementById(buttonId.replace("Home", "Office"));
+    otherButton.style.backgroundColor = "#ECEFF1";
+    
+}
+
+function buttonPressOffice(buttonId) {
+    clickedButton = document.getElementById(buttonId);
+    // if button has already been clicked, remove colour, else add colour
+    if(clickedButton.style.backgroundColor == "lightblue"){
+        clickedButton.style.backgroundColor = "#ECEFF1"
+    }
+    else {clickedButton.style.backgroundColor = "lightblue";}
+
+    // remove colour from corresponding office button for that day
+    otherButton = document.getElementById(buttonId.replace("Office", "Home"));
+    otherButton.style.backgroundColor = "#ECEFF1";
+}
+
+
   
