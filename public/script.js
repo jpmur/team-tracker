@@ -3,22 +3,25 @@ const home = document.getElementById("button_Olive");
 const office = document.querySelector(".office-button");
 
 function buttonPressHome(buttonId) {
-    switch(buttonId) {
-        case "buttonHome0_Jason":
-            alert("jason pressed");
-        case "buttonHome4_Olive":
-            alert("olive pressed");
-    }
+    console.log(buttonId);
+    button = document.getElementById(buttonId);
+    button.style.backgroundColor = "lightblue";
+}
+
+function buttonPressHome(buttonId) {
+    console.log(buttonId);
+    button = document.getElementById(buttonId);
+    button.style.backgroundColor = "lightblue";
 }
 
 
 const USER_HEIGHT = 65;
-const TEAM = ["Olive", "Jason", "Salem", "Naman", "Stephen", "Eoin", "Diarmuid"];
+const team = ["Olive", "Jason", "Salem", "Naman", "Stephen", "Eoin", "Diarmuid"];
 
 document.addEventListener('DOMContentLoaded', function() {
-    const boxHeight = (TEAM.length * USER_HEIGHT);
+    const boxHeight = (team.length * USER_HEIGHT);
     document.getElementById("box").style.height = boxHeight.toString() + "px"
-    TEAM.forEach((element) => {   
+    team.forEach((element) => {   
     // Add div for each user 
     var userDiv = document.createElement('div');
     userDiv.id = "user_" + element;
@@ -29,20 +32,23 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("box").appendChild(userDiv);
     });
 
-    TEAM.forEach((element) => {
+    team.forEach((member, teamIdx) => {
         for (let i = 0; i < 5; i++) {
             // add home buttons for each user
             var buttonHome = document.createElement("button");
-            buttonHome.id = "buttonHome" + i +"_" + element;
+            buttonHome.id = "buttonHome" + i +"_" + member;
             buttonHome.style.position = "absolute";
             buttonHome.style.border = "none";
             buttonHome.style.borderRadius = "4px";
             buttonHome.style.cursor = "pointer";
             buttonHome.textContent = "Home";
             buttonHome.style.left = (150 + (i*160) - (i*28)).toString() + "px";
+            buttonHome.addEventListener("click", () => {
+                buttonPressHome("buttonHome" + (i) + "_" + team[teamIdx]);
+            })
             // add office buttons for each user
             var buttonOffice = document.createElement("button");
-            buttonOffice.id = "buttonOffice" + i +"_" + element;
+            buttonOffice.id = "buttonOffice" + i +"_" + member;
             buttonOffice.style.position = "absolute";
             buttonOffice.style.border = "none";
             buttonOffice.style.borderRadius = "4px";
@@ -52,11 +58,11 @@ document.addEventListener('DOMContentLoaded', function() {
             buttonOffice.onclick = function() {
                 alert("officeButtonClicked");
             }
-            document.getElementById("user_" + element).appendChild(buttonHome);
-            document.getElementById("user_" + element).appendChild(buttonOffice);
+            document.getElementById("user_" + member).appendChild(buttonHome);
+            document.getElementById("user_" + member).appendChild(buttonOffice);
 
-            //buttonHome.addEventListener("click", buttonPressHome(buttonHome.id))
         };   
     });
+    
 });
   
