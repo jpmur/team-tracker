@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBbjVi2kk14O2o25Ps1m3_NgEZh4A44Jmk",
@@ -15,6 +15,8 @@ const USER_HEIGHT = 65; // height of main box added for each user
 const DB_COLLECTION = "users";
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const team = ["Olive", "Jason", "Salem", "Naman", "Stephen", "Eoin", "Diarmuid"];
+const unsavedUsers = [];
+
 var userSettings = {};
 
 const app = initializeApp(firebaseConfig);
@@ -34,23 +36,30 @@ const db = getFirestore(app);
 //   }
 
 // Read user settings from DB
-async function readUserSettings() {
-    for (const user of team) {
-        const docRef = doc(db, DB_COLLECTION, user);
-        const docSnap = await getDoc(docRef);
+// async function readUserSettings() {
+//     for (const user of team) {
+//         const docRef = doc(db, DB_COLLECTION, user);
+//         const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-            userSettings[docSnap.id] = docSnap.data();
-        } else {
-        console.log("Document not found in collection!");
-        }
-    }
+//         if (docSnap.exists()) {
+//             userSettings[docSnap.id] = docSnap.data();
+//         } else {
+//         console.log("Document not found in collection!");
+//         }
+//     }
 
-    for (var userName in userSettings){
-        updateButtonsFromDb(userName, userSettings[userName]);
-    }
+//     for (var userName in userSettings){
+//         updateButtonsFromDb(userName, userSettings[userName]);
+//     }
+// }
+
+async function loadUserSettings() {
+    const querySnapshot = await getDocs(collection(db, DB_COLLECTION));
+    querySnapshot.forEach((user) => {
+    userSettings[user.id] = user.data();
+    updateButtonsFromDb(user.id, user.data())
+    });
 }
-
 // Update button states based on data stored in DB
 function updateButtonsFromDb(userName, userSettings) {
     for(var day in userSettings) {
@@ -86,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add buttons for each user for each day of the week
     team.forEach((user, teamIdx) => {
         days.forEach((day, dayIdx) => {
-            // home buttons
+            // Home buttons
             var buttonHome = document.createElement("button");
             buttonHome.id = `buttonHome${day}_${user}`;
             buttonHome.style.position = "absolute";
@@ -100,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 buttonHandler("buttonHome" + (day) + "_" + team[teamIdx]);
             });
 
-            // office buttons 
+            // Office buttons 
             var buttonOffice = document.createElement("button");
             buttonOffice.id = `buttonOffice${day}_${user}`;
             buttonOffice.style.position = "absolute";
@@ -118,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });   
     });
     document.getElementById("saveButton").addEventListener("click", saveUserSettings);
-    readUserSettings();
+    loadUserSettings();
 });
 
 
@@ -126,37 +135,54 @@ document.addEventListener('DOMContentLoaded', () => {
 function buttonHandler(buttonId) {
     const clickedButton = document.getElementById(buttonId);
 
-    // if button has already been clicked, remove colour, else add colour
+    // If button has already been clicked, remove colour, else add colour
     if(clickedButton.style.backgroundColor == "lightblue"){
         clickedButton.style.backgroundColor = "#ECEFF1";
+        updateUserSettings(buttonId, "unclick"); // Remove user setting from local storage
+        return;
     }
     else {clickedButton.style.backgroundColor = "lightblue";}
 
-    // remove colour from opposite button for that day
+    // Remove colour from opposite button for that day
     if(buttonId.includes("Home")) {
         var oppButton = document.getElementById(buttonId.replace("Home", "Office"));
     } else {
         var oppButton = document.getElementById(buttonId.replace("Office", "Home"));
     }
     oppButton.style.backgroundColor = "#ECEFF1";
-    updateUserSettings(buttonId);
+
+    // Store changes locally
+    updateUserSettings(buttonId, "click");
 }
 
-function updateUserSettings(buttonId) {
+function updateUserSettings(buttonId, clickType) {
     // Parse button ID string to extract key parameters (user name, day, home/office)
     var buttonType = "office";
     if(buttonId.includes("Home")) { buttonType = "home" };
     const userName = buttonId.split("_")[1];
     const buttonDay = buttonId.split("_")[0].substr(-3);
 
+    // Add user's name to unsaved user's list (if not already added)
+    if (!(unsavedUsers.includes(userName))) {
+        unsavedUsers.push(userName);
+    }
+    
+
     const currentUserSettings = userSettings[userName];   // extract the user's current settings from DB JSON tree
-    currentUserSettings[buttonDay] = buttonType;          // update appropriate day within the user's JSON object
+    if(clickType == "click") {
+    currentUserSettings[buttonDay] = buttonType;          // update appropriate day with home/office choice in the user's JSON object
+    }
+    else if (clickType == "unclick") {
+        currentUserSettings[buttonDay] = "";              // update appropriate day with null in the user's JSON object
+    }
+    else { console.log("updateUserSettings(): Invalid click option") }
+
     userSettings[userName] = currentUserSettings;         // write updated object back into DB tree
 }
 
-async function saveUserSettings(){
-    for (const user of team) {
+function saveUserSettings(){
+    for (const user of unsavedUsers) {
         const docRef = doc(db, DB_COLLECTION, user);
-        await updateDoc(docRef, userSettings);
+        setDoc(docRef, userSettings[user]);
     }
 }
