@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, Timestamp} from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBbjVi2kk14O2o25Ps1m3_NgEZh4A44Jmk",
@@ -13,11 +13,14 @@ const firebaseConfig = {
 
 const USER_HEIGHT = 65; // height of main box added for each user
 const DB_COLLECTION = "users";
+const BLUE = "rgb(41, 121, 226)";
+const GREY = "rgb(236, 239, 241)";
+
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const team = ["Olive", "Jason", "Salem", "Naman", "Stephen", "Eoin", "Diarmuid"];
-const unsavedUsers = [];
-
 var userSettings = {};
+const unsavedUsers = [];
+const saveTick = document.getElementById("tick");
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -35,48 +38,10 @@ const db = getFirestore(app);
 //     });
 //   }
 
-// Read user settings from DB
-// async function readUserSettings() {
-//     for (const user of team) {
-//         const docRef = doc(db, DB_COLLECTION, user);
-//         const docSnap = await getDoc(docRef);
-
-//         if (docSnap.exists()) {
-//             userSettings[docSnap.id] = docSnap.data();
-//         } else {
-//         console.log("Document not found in collection!");
-//         }
-//     }
-
-//     for (var userName in userSettings){
-//         updateButtonsFromDb(userName, userSettings[userName]);
-//     }
-// }
-
-async function loadUserSettings() {
-    const querySnapshot = await getDocs(collection(db, DB_COLLECTION));
-    querySnapshot.forEach((user) => {
-    userSettings[user.id] = user.data();
-    updateButtonsFromDb(user.id, user.data())
-    });
-}
-// Update button states based on data stored in DB
-function updateButtonsFromDb(userName, userSettings) {
-    for(var day in userSettings) {
-        switch(userSettings[day]) {
-            case "home":
-                document.getElementById("buttonHome" + day + "_" + userName).style.backgroundColor = "lightblue";
-                document.getElementById("buttonOffice" + day + "_" + userName).style.backgroundColor = "#ECEFF1";
-                break;
-            case "office":
-                document.getElementById("buttonOffice" + day + "_" + userName).style.backgroundColor = "lightblue";
-                document.getElementById("buttonHome" + day + "_" + userName).style.backgroundColor = "#ECEFF1";
-        }
-    }
-}
-
 
 document.addEventListener('DOMContentLoaded', () => {
+    checkNewWeek();
+
     // Set height of main box based on number of users
     const boxHeight = (team.length * USER_HEIGHT);
     document.getElementById("box").style.height = boxHeight.toString() + "px"
@@ -131,17 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-
 function buttonHandler(buttonId) {
+    // Make save tick disappear
+    saveTick.style.opacity = "0";
+
     const clickedButton = document.getElementById(buttonId);
 
     // If button has already been clicked, remove colour, else add colour
-    if(clickedButton.style.backgroundColor == "lightblue"){
-        clickedButton.style.backgroundColor = "#ECEFF1";
+    if(clickedButton.style.backgroundColor == BLUE){
+        removeButtonColour(clickedButton);
         updateUserSettings(buttonId, "unclick"); // Remove user setting from local storage
         return;
     }
-    else {clickedButton.style.backgroundColor = "lightblue";}
+    else { addButtonColour(clickedButton); }
 
     // Remove colour from opposite button for that day
     if(buttonId.includes("Home")) {
@@ -149,10 +116,32 @@ function buttonHandler(buttonId) {
     } else {
         var oppButton = document.getElementById(buttonId.replace("Office", "Home"));
     }
-    oppButton.style.backgroundColor = "#ECEFF1";
+    removeButtonColour(oppButton);
 
     // Store changes locally
     updateUserSettings(buttonId, "click");
+}
+
+async function loadUserSettings() {
+    const querySnapshot = await getDocs(collection(db, DB_COLLECTION));
+    querySnapshot.forEach((user) => {
+    userSettings[user.id] = user.data();
+    updateButtonsFromDb(user.id, user.data())
+    });
+}
+// Update button states based on data stored in DB
+function updateButtonsFromDb(userName, userSettings) {
+    for(var day in userSettings) {
+        switch(userSettings[day]) {
+            case "home":
+                addButtonColour(document.getElementById("buttonHome" + day + "_" + userName));
+                removeButtonColour(document.getElementById("buttonOffice" + day + "_" + userName));
+                break;
+            case "office":
+                addButtonColour(document.getElementById("buttonOffice" + day + "_" + userName));
+                removeButtonColour(document.getElementById("buttonHome" + day + "_" + userName));
+        }
+    }
 }
 
 function updateUserSettings(buttonId, clickType) {
@@ -167,7 +156,6 @@ function updateUserSettings(buttonId, clickType) {
         unsavedUsers.push(userName);
     }
     
-
     const currentUserSettings = userSettings[userName];   // extract the user's current settings from DB JSON tree
     if(clickType == "click") {
     currentUserSettings[buttonDay] = buttonType;          // update appropriate day with home/office choice in the user's JSON object
@@ -180,9 +168,51 @@ function updateUserSettings(buttonId, clickType) {
     userSettings[userName] = currentUserSettings;         // write updated object back into DB tree
 }
 
-function saveUserSettings(){
+async function saveUserSettings() {
     for (const user of unsavedUsers) {
         const docRef = doc(db, DB_COLLECTION, user);
-        setDoc(docRef, userSettings[user]);
+        try {
+            await setDoc(docRef, userSettings[user]);
+            document.getElementById("tick").style.opacity = "1";
+        } catch(e) {
+            console.error(e);
+        }
     }
+}
+
+async function checkNewWeek() {
+    const timeDoc = doc(db, "time", "reset");
+    const timeData = await getDoc(timeDoc);
+    const lastReset = timeData.data();
+    console.log(timestamp["seconds"]);
+    
+
+    // const timestamp = Timestamp.now();
+    // const dateNow = timestamp.toDate();
+    
+
+
+
+    // const docRef = doc(db, "time", "reset");
+    // try {
+    //     await setDoc(docRef, {timestamp: timestamp});
+    // } catch(e) {
+    //     console.error(e);
+    // }
+
+
+    const date = new Date(dateNow)
+    // console.log(date.getTime());
+
+
+}
+
+function addButtonColour(button) {
+    button.style.backgroundColor = BLUE;
+    button.style.color = "white";
+}
+
+function removeButtonColour(button) {
+    button.style.backgroundColor = GREY;
+    button.style.color = "black";
 }
