@@ -40,7 +40,7 @@ const db = getFirestore(app);
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    checkNewWeek();
+    //checkNewWeek();
 
     // Set height of main box based on number of users
     const boxHeight = (team.length * USER_HEIGHT);
