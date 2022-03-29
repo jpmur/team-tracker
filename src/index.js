@@ -14,6 +14,7 @@ const firebaseConfig = {
 const USER_HEIGHT = 65; // height of main box added for each user
 const DB_COLLECTION = "users";
 const BLUE = "rgb(41, 121, 226)";
+const RED = "rgb(242, 90, 90)"
 const GREY = "rgb(236, 239, 241)";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -103,12 +104,18 @@ function buttonHandler(buttonId) {
     const clickedButton = document.getElementById(buttonId);
 
     // If button has already been clicked, remove colour, else add colour
-    if(clickedButton.style.backgroundColor == BLUE){
+    if(clickedButton.style.backgroundColor != GREY){
         removeButtonColour(clickedButton);
         updateUserSettings(buttonId, "unclick"); // Remove user setting from local storage
         return;
     }
-    else { addButtonColour(clickedButton); }
+    else {
+        var colour = BLUE;
+        if(buttonId.includes("Home")){
+            colour = RED;
+        }
+        addButtonColour(clickedButton, colour); 
+    }
 
     // Remove colour from opposite button for that day
     if(buttonId.includes("Home")) {
@@ -134,11 +141,11 @@ function updateButtonsFromDb(userName, userSettings) {
     for(var day in userSettings) {
         switch(userSettings[day]) {
             case "home":
-                addButtonColour(document.getElementById("buttonHome" + day + "_" + userName));
+                addButtonColour(document.getElementById("buttonHome" + day + "_" + userName), RED);
                 removeButtonColour(document.getElementById("buttonOffice" + day + "_" + userName));
                 break;
             case "office":
-                addButtonColour(document.getElementById("buttonOffice" + day + "_" + userName));
+                addButtonColour(document.getElementById("buttonOffice" + day + "_" + userName), BLUE);
                 removeButtonColour(document.getElementById("buttonHome" + day + "_" + userName));
         }
     }
@@ -207,8 +214,8 @@ async function checkNewWeek() {
 
 }
 
-function addButtonColour(button) {
-    button.style.backgroundColor = BLUE;
+function addButtonColour(button, colour) {
+    button.style.backgroundColor = colour;
     button.style.color = "white";
 }
 
