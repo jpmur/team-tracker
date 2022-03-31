@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, Timestamp} from 'firebase/firestore';
 
+/* Constants */
 const firebaseConfig = {
   apiKey: "AIzaSyBbjVi2kk14O2o25Ps1m3_NgEZh4A44Jmk",
   authDomain: "team-tracker-41c94.firebaseapp.com",
@@ -16,34 +17,24 @@ const DB_COLLECTION = "users";
 const BLUE = "rgb(41, 121, 226)";
 const RED = "rgb(242, 90, 90)"
 const GREY = "rgb(236, 239, 241)";
+const WEEK_MS = (7 * 24 * 60 * 60 * 1000);
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const team = ["Olive", "Jason", "Salem", "Naman", "Stephen", "Eoin", "Diarmuid"];
 var userSettings = {};
-const unsavedUsers = [];
+const unsavedUsers = []; // array that tracks user's who's settings have been changed since page load.
 const saveTick = document.getElementById("tick");
+
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-
-// async function loadCity(name) {
-//     team.forEach(element => {
-//         setDoc(doc(db, `users`, element), {
-//             Mon: "",
-//             Tue: "",
-//             Wed: "",
-//             Thu: "",
-//             Fri: ""
-//         })
-//     });
-//   }
-
-
+/* Main script that runs on page load that populates the page based on the users in "team" array
+   and reads user settings from the DB. */
 document.addEventListener('DOMContentLoaded', () => {
-    //checkNewWeek();
+    checkNewWeek();
 
-    // Set height of main box based on number of users
+    // Set height of main box based on number of users.
     const boxHeight = (team.length * USER_HEIGHT);
     document.getElementById("box").style.height = boxHeight.toString() + "px"
 
@@ -58,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById("box").appendChild(userDiv);
     });
 
-    // Add buttons for each user for each day of the week
+    // Add buttons for each user for each day of the week.
     team.forEach((user, teamIdx) => {
         days.forEach((day, dayIdx) => {
             // Home buttons
@@ -93,20 +84,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });   
     });
     document.getElementById("saveButton").addEventListener("click", saveUserSettings);
-    loadUserSettings();
+    loadUserSettings(); // 
 });
 
 
+/* Handler for all home/office buttons.
+   Reads which button was pressed and updates user settings accordingly. */
 function buttonHandler(buttonId) {
-    // Make save tick disappear
-    saveTick.style.opacity = "0";
+    saveTick.style.opacity = "0"; // Make save tick disappear
 
     const clickedButton = document.getElementById(buttonId);
 
-    // If button has already been clicked, remove colour, else add colour
+    // If button has already been clicked, remove colour, else add colour.
     if(clickedButton.style.backgroundColor != GREY){
         removeButtonColour(clickedButton);
-        updateUserSettings(buttonId, "unclick"); // Remove user setting from local storage
+        updateUserSettings(buttonId, "unclick"); // Remove user setting from local storage.
         return;
     }
     else {
@@ -125,10 +117,11 @@ function buttonHandler(buttonId) {
     }
     removeButtonColour(oppButton);
 
-    // Store changes locally
-    updateUserSettings(buttonId, "click");
+    updateUserSettings(buttonId, "click"); // Store changes locally
 }
 
+/* Retrieve current user settings from DB and make local copy. 
+   Update button states based on this data. */
 async function loadUserSettings() {
     const querySnapshot = await getDocs(collection(db, DB_COLLECTION));
     querySnapshot.forEach((user) => {
@@ -136,7 +129,8 @@ async function loadUserSettings() {
     updateButtonsFromDb(user.id, user.data())
     });
 }
-// Update button states based on data stored in DB
+
+/* Update button states based on data stored in DB. */
 function updateButtonsFromDb(userName, userSettings) {
     for(var day in userSettings) {
         switch(userSettings[day]) {
@@ -151,6 +145,7 @@ function updateButtonsFromDb(userName, userSettings) {
     }
 }
 
+/* Updates local copy of user settings each time a button is pressed. */
 function updateUserSettings(buttonId, clickType) {
     // Parse button ID string to extract key parameters (user name, day, home/office)
     var buttonType = "office";
@@ -163,18 +158,20 @@ function updateUserSettings(buttonId, clickType) {
         unsavedUsers.push(userName);
     }
     
-    const currentUserSettings = userSettings[userName];   // extract the user's current settings from DB JSON tree
+    const currentUserSettings = userSettings[userName]; // extract the user's current settings from DB JSON tree
     if(clickType == "click") {
-    currentUserSettings[buttonDay] = buttonType;          // update appropriate day with home/office choice in the user's JSON object
+    currentUserSettings[buttonDay] = buttonType; // update appropriate day with home/office choice in the user's JSON object
     }
     else if (clickType == "unclick") {
-        currentUserSettings[buttonDay] = "";              // update appropriate day with null in the user's JSON object
+        currentUserSettings[buttonDay] = ""; // update appropriate day with null in the user's JSON object
     }
     else { console.log("updateUserSettings(): Invalid click option") }
 
-    userSettings[userName] = currentUserSettings;         // write updated object back into DB tree
+    userSettings[userName] = currentUserSettings; // write updated object back into DB tree
 }
 
+/* Save Button Handler - writes current local user settings to DB
+   Only users who's settings have been changed since page load will be updated. */
 async function saveUserSettings() {
     for (const user of unsavedUsers) {
         const docRef = doc(db, DB_COLLECTION, user);
@@ -188,14 +185,20 @@ async function saveUserSettings() {
 }
 
 async function checkNewWeek() {
-    const timeDoc = doc(db, "time", "reset");
-    const timeData = await getDoc(timeDoc);
-    const lastReset = timeData.data();
-    console.log(timestamp["seconds"]);
+    // Get last reset timestamp from DB (ms since Unix epoch)
+    const timestampDb = await getDoc(doc(db, "time", "reset"));
+    const lastReset = timestampDb.data();
+    const lastResetMs= (lastReset["timestamp"]["seconds"]) * 1000;
+
+    // Get current time (ms since Unix epoch)
+    const currentTime = Timestamp.now().toMillis();
+
+    if((currentTime - lastResetMs) >  (WEEK_MS +100000)) {
+        console.log("Week has passed!");
+    }
+    
     
 
-    // const timestamp = Timestamp.now();
-    // const dateNow = timestamp.toDate();
     
 
 
@@ -208,7 +211,7 @@ async function checkNewWeek() {
     // }
 
 
-    const date = new Date(dateNow)
+    //const date = new Date(dateNow)
     // console.log(date.getTime());
 
 
