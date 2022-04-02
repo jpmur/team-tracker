@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, Timestamp} from 'firebase/firestore';
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, Timestamp, writeBatch} from 'firebase/firestore';
 
 /* Constants */
 const firebaseConfig = {
@@ -32,7 +32,7 @@ const db = getFirestore(app);
 /* Main script that runs on page load that populates the page based on the users in "team" array
    and reads user settings from the DB. */
 document.addEventListener('DOMContentLoaded', () => {
-    checkNewWeek();
+    //checkNewWeek();
 
     // Set height of main box based on number of users.
     const boxHeight = (team.length * USER_HEIGHT);
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });   
     });
     document.getElementById("saveButton").addEventListener("click", saveUserSettings);
-    loadUserSettings(); // 
+    loadUserSettings(); 
 });
 
 
@@ -193,28 +193,25 @@ async function checkNewWeek() {
     // Get current time (ms since Unix epoch)
     const currentTime = Timestamp.now().toMillis();
 
-    if((currentTime - lastResetMs) >  (WEEK_MS +100000)) {
-        console.log("Week has passed!");
+    if((currentTime - lastResetMs) > 1) {
+        clearUserSettingsDb();
     }
-    
-    
+}
 
-    
-
-
-
-    // const docRef = doc(db, "time", "reset");
-    // try {
-    //     await setDoc(docRef, {timestamp: timestamp});
-    // } catch(e) {
-    //     console.error(e);
-    // }
-
-
-    //const date = new Date(dateNow)
-    // console.log(date.getTime());
-
-
+/* Function that clears all user settings in DB with a batch write */
+async function clearUserSettingsDb() {
+    const batch = writeBatch(db);
+    team.forEach(user => {
+        const userRef = doc(db, DB_COLLECTION, user);
+        batch.update(userRef, {
+            Mon: "",
+            Tue: "",
+            Wed: "",
+            Thu: "",
+            Fri: ""
+        });
+    });
+    await batch.commit();
 }
 
 function addButtonColour(button, colour) {
