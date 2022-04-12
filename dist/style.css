@@ -5,7 +5,7 @@
     align-items: center; 
     text-align: left;
     min-height: 100vh;
-    font-family: Roboto, Helvetica, Arial, sans-serif;
+    font-family: Barlow;
   }
 
   #box {
@@ -26,7 +26,7 @@
     padding: 3px;
     word-spacing: 90px;
     text-align: center;
-    left: 135px;
+    left: 118px;
     font-size: 120%;
     font-weight: bold;
     background-color: rgba(41, 121, 226, 0.521);
@@ -75,5 +75,8 @@
     font-weight: 300;
   }
 
-}
+  label {
+    font: 10px 'Exo 2', Barlow;
+  }
+
 

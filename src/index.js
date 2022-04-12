@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonHome.style.cursor = "pointer";
             buttonHome.textContent = "Home";
             buttonHome.style.padding = "7px";
-            buttonHome.style.left = (152 + (dayIdx*160) - (dayIdx*28)).toString() + "px";
+            buttonHome.style.left = (130 + (dayIdx*160) - (dayIdx*28)).toString() + "px";
+            buttonHome.style.fontFamily = "Barlow";
             buttonHome.addEventListener("click", () => {
                 buttonHandler("buttonHome" + (day) + "_" + team[teamIdx]);
             });
@@ -75,13 +76,31 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonOffice.style.cursor = "pointer";
             buttonOffice.textContent = "Office";
             buttonOffice.style.padding = "7px";
-            buttonOffice.style.left = (207 + (dayIdx*160) - (dayIdx*28)).toString() + "px";
+            buttonOffice.style.left = (187 + (dayIdx*160) - (dayIdx*28)).toString() + "px";
+            buttonOffice.style.fontFamily = "Barlow";
             buttonOffice.addEventListener("click", () => {
                 buttonHandler("buttonOffice" + (day) + "_" + team[teamIdx]);
             });
             document.getElementById("user_" + user).appendChild(buttonHome);
             document.getElementById("user_" + user).appendChild(buttonOffice);
         });   
+
+        var checkBox = document.createElement("input");
+        checkBox.type = "checkbox";
+        checkBox.id = `checkbox${user}`;
+        checkBox.style.position = "absolute";
+        checkBox.style.left = "790px";
+        checkBox.style.top = "45px";
+
+        var label = document.createElement('label')
+        label.htmlFor = `checkbox${user}`;
+        label.appendChild(document.createTextNode('Store Settings'));
+        label.style.position = "absolute";
+        label.style.left = "813px";
+        label.style.top = "42px";
+
+        document.getElementById("user_" + user).appendChild(checkBox);
+        document.getElementById("user_" + user).appendChild(label);
     });
     document.getElementById("saveButton").addEventListener("click", saveUserSettings);
     loadUserSettings(); 
@@ -96,7 +115,7 @@ function buttonHandler(buttonId) {
     const clickedButton = document.getElementById(buttonId);
 
     // If button has already been clicked, remove colour, else add colour.
-    if(clickedButton.style.backgroundColor != GREY){
+    if(clickedButton.style.backgroundColor == RED || clickedButton.style.backgroundColor == BLUE){
         removeButtonColour(clickedButton);
         updateUserSettings(buttonId, "unclick"); // Remove user setting from local storage.
         return;
