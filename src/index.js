@@ -43,9 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
     var userDiv = document.createElement('div');
     userDiv.id = "user_" + user;
     userDiv.innerHTML = user;
+    userDiv.style.fontSize = "17px";
     userDiv.style.fontWeight = "bold";
     userDiv.style.position = "relative"
     userDiv.style.paddingTop = "40px"; 
+    userDiv.style.paddingBottom = "3px"; 
     document.getElementById("box").appendChild(userDiv);
     });
 
@@ -61,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonHome.style.cursor = "pointer";
             buttonHome.textContent = "Home";
             buttonHome.style.padding = "7px";
-            buttonHome.style.left = (130 + (dayIdx*160) - (dayIdx*28)).toString() + "px";
+            buttonHome.style.left = (130 + (dayIdx*132)).toString() + "px";
             buttonHome.style.fontFamily = "Barlow";
             buttonHome.addEventListener("click", () => {
                 buttonHandler("buttonHome" + (day) + "_" + team[teamIdx]);
@@ -76,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonOffice.style.cursor = "pointer";
             buttonOffice.textContent = "Office";
             buttonOffice.style.padding = "7px";
-            buttonOffice.style.left = (187 + (dayIdx*160) - (dayIdx*28)).toString() + "px";
+            buttonOffice.style.left = (187 + (dayIdx*132)).toString() + "px";
             buttonOffice.style.fontFamily = "Barlow";
             buttonOffice.addEventListener("click", () => {
                 buttonHandler("buttonOffice" + (day) + "_" + team[teamIdx]);
