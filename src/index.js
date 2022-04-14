@@ -22,7 +22,8 @@ const WEEK_MS = (7 * 24 * 60 * 60 * 1000);
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const team = ["Olive", "Jason", "Salem", "Naman", "Stephen", "Eoin", "Diarmuid"];
 var userSettings = {};
-const unsavedUsers = []; // array that tracks user's who's settings have been changed since page load.
+const unsavedUsers = []; // array that tracks user's who's settings have been changed since page load
+const uncheckedUsers = []; // array that tracks user's who's "Store Settings" checkbox in unchecked
 const saveTick = document.getElementById("tick");
 
 
@@ -31,8 +32,11 @@ const db = getFirestore(app);
 
 /* Main script that runs on page load that populates the page based on the users in "team" array
    and reads user settings from the DB. */
-document.addEventListener('DOMContentLoaded', () => {
-    //checkNewWeek();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load all user data from DB
+    await loadUserSettings();
+    // Check if user data needs to deleted from DB
+    await checkNewWeek();
 
     // Set height of main box based on number of users.
     const boxHeight = (team.length * USER_HEIGHT);
@@ -87,13 +91,22 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById("user_" + user).appendChild(buttonOffice);
         });   
 
+        // "Store Settings" checkboxes
         var checkBox = document.createElement("input");
         checkBox.type = "checkbox";
         checkBox.id = `checkbox${user}`;
         checkBox.style.position = "absolute";
         checkBox.style.left = "790px";
         checkBox.style.top = "45px";
-
+        checkBox.addEventListener("change", () => {
+            if(checkBox.checked) {
+                user = team[teamIdx];
+                userSettings[user].storeSettings = true;
+            }
+            else { userSettings[user].storeSettings = false }
+            addToUnsavedUsers(user);
+        });
+        // Checkbox labels
         var label = document.createElement('label')
         label.htmlFor = `checkbox${user}`;
         label.appendChild(document.createTextNode('Store Settings'));
@@ -105,7 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById("user_" + user).appendChild(label);
     });
     document.getElementById("saveButton").addEventListener("click", saveUserSettings);
-    loadUserSettings(); 
+    // After UI is populated, add user settings to it
+    updateButtonsFromDb()
 });
 
 
@@ -147,39 +161,45 @@ async function loadUserSettings() {
     const querySnapshot = await getDocs(collection(db, DB_COLLECTION));
     querySnapshot.forEach((user) => {
     userSettings[user.id] = user.data();
-    updateButtonsFromDb(user.id, user.data())
     });
 }
 
-/* Update button states based on data stored in DB. */
-function updateButtonsFromDb(userName, userSettings) {
-    for(var day in userSettings) {
-        switch(userSettings[day]) {
-            case "home":
-                addButtonColour(document.getElementById("buttonHome" + day + "_" + userName), RED);
-                removeButtonColour(document.getElementById("buttonOffice" + day + "_" + userName));
-                break;
-            case "office":
-                addButtonColour(document.getElementById("buttonOffice" + day + "_" + userName), BLUE);
-                removeButtonColour(document.getElementById("buttonHome" + day + "_" + userName));
+/* Update button/checkbox states based on data stored in DB. */
+function updateButtonsFromDb() {
+    // Update buttons
+    for(var user in userSettings) {
+        for(var day of Object.keys(userSettings[user])) {
+            switch(userSettings[user][day]) {
+                case "home":
+                    addButtonColour(document.getElementById("buttonHome" + day + "_" + user), RED);
+                    removeButtonColour(document.getElementById("buttonOffice" + day + "_" + user));
+                    break;
+                case "office":
+                    addButtonColour(document.getElementById("buttonOffice" + day + "_" + user), BLUE);
+                    removeButtonColour(document.getElementById("buttonHome" + day + "_" + user));
+            }
+        }
+        // Update checkboxes 
+        if(userSettings[user].storeSettings) {
+            document.getElementById(`checkbox${user}`).checked = true;
         }
     }
 }
+
+
 
 /* Updates local copy of user settings each time a button is pressed. */
 function updateUserSettings(buttonId, clickType) {
     // Parse button ID string to extract key parameters (user name, day, home/office)
     var buttonType = "office";
     if(buttonId.includes("Home")) { buttonType = "home" };
-    const userName = buttonId.split("_")[1];
+    const user = buttonId.split("_")[1];
     const buttonDay = buttonId.split("_")[0].substr(-3);
 
-    // Add user's name to unsaved user's list (if not already added)
-    if (!(unsavedUsers.includes(userName))) {
-        unsavedUsers.push(userName);
-    }
-    
-    const currentUserSettings = userSettings[userName]; // extract the user's current settings from DB JSON tree
+    // Add user's name to unsaved user's list
+    addToUnsavedUsers(user);
+
+    const currentUserSettings = userSettings[user]; // extract the user's current settings from DB JSON tree
     if(clickType == "click") {
     currentUserSettings[buttonDay] = buttonType; // update appropriate day with home/office choice in the user's JSON object
     }
@@ -188,7 +208,7 @@ function updateUserSettings(buttonId, clickType) {
     }
     else { console.log("updateUserSettings(): Invalid click option") }
 
-    userSettings[userName] = currentUserSettings; // write updated object back into DB tree
+    userSettings[user] = currentUserSettings; // write updated object back into DB tree
 }
 
 /* Save Button Handler - writes current local user settings to DB
@@ -215,14 +235,32 @@ async function checkNewWeek() {
     const currentTime = Timestamp.now().toMillis();
 
     if((currentTime - lastResetMs) > 1) {
-        clearUserSettingsDb();
+        await clearUserSettingsDb();
+        uncheckedUsers.forEach(user => {
+            for(var day in userSettings[user]) {
+                userSettings[user][day] = ""
+            }
+        })
+
+        // for(var user in userSettings) {
+        //     for(var day of Object.keys(userSettings[user])) {
+        //         userSettings[user][day] = "";
+        //     }
+        // }
     }
 }
 
-/* Function that clears all user settings in DB with a batch write */
+/* Function that deletes all user settings in DB with a batch write */
 async function clearUserSettingsDb() {
-    const batch = writeBatch(db);
+    // Check all checkboxes to determine which user settings to delete
     team.forEach(user => {
+        if(!(userSettings[user].storeSettings)){
+            uncheckedUsers.push(user);
+        }
+    });
+
+    const batch = writeBatch(db);
+    uncheckedUsers.forEach(user => {
         const userRef = doc(db, DB_COLLECTION, user);
         batch.update(userRef, {
             Mon: "",
@@ -243,4 +281,10 @@ function addButtonColour(button, colour) {
 function removeButtonColour(button) {
     button.style.backgroundColor = GREY;
     button.style.color = "black";
+}
+
+function addToUnsavedUsers(user) {
+    if (!(unsavedUsers.includes(user))) {
+        unsavedUsers.push(user);
+    }
 }
