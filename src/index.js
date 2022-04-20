@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             buttonOffice.style.cursor = "pointer";
             buttonOffice.textContent = "Office";
             buttonOffice.style.padding = "7px";
-            buttonOffice.style.left = (187 + (dayIdx*132)).toString() + "px";
+            buttonOffice.style.left = (183 + (dayIdx*132)).toString() + "px";
             buttonOffice.style.fontFamily = "Barlow";
             buttonOffice.addEventListener("click", () => {
                 buttonHandler("buttonOffice" + (day) + "_" + team[teamIdx]);
