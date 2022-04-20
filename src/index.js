@@ -155,6 +155,7 @@ function buttonHandler(buttonId) {
     updateUserSettings(buttonId, "click"); // Store changes locally
 }
 
+
 /* Retrieve current user settings from DB and make local copy. 
    Update button states based on this data. */
 async function loadUserSettings() {
@@ -163,6 +164,7 @@ async function loadUserSettings() {
     userSettings[user.id] = user.data();
     });
 }
+
 
 /* Update button/checkbox states based on data stored in DB. */
 function updateButtonsFromDb() {
@@ -185,7 +187,6 @@ function updateButtonsFromDb() {
         }
     }
 }
-
 
 
 /* Updates local copy of user settings each time a button is pressed. */
@@ -211,6 +212,7 @@ function updateUserSettings(buttonId, clickType) {
     userSettings[user] = currentUserSettings; // write updated object back into DB tree
 }
 
+
 /* Save Button Handler - writes current local user settings to DB
    Only users who's settings have been changed since page load will be updated. */
 async function saveUserSettings() {
@@ -225,6 +227,7 @@ async function saveUserSettings() {
     }
 }
 
+
 async function checkNewWeek() {
     // Get last reset timestamp from DB (ms since Unix epoch)
     const timestampDb = await getDoc(doc(db, "time", "reset"));
@@ -234,21 +237,23 @@ async function checkNewWeek() {
     // Get current time (ms since Unix epoch)
     const currentTime = Timestamp.now().toMillis();
 
-    if((currentTime - lastResetMs) > 1) {
+    if((currentTime - lastResetMs) > WEEK_MS) {
         await clearUserSettingsDb();
+        // Update local copy of user settings
         uncheckedUsers.forEach(user => {
-            for(var day in userSettings[user]) {
-                userSettings[user][day] = ""
-            }
+            days.forEach(day => {
+                userSettings[user][day] = "";
+            });
         })
-
-        // for(var user in userSettings) {
-        //     for(var day of Object.keys(userSettings[user])) {
-        //         userSettings[user][day] = "";
-        //     }
-        // }
+        // Update reset timestamp in DB
+        const timestamp = Timestamp.now();
+        const docRef = doc(db, "time", "reset");
+        await setDoc(docRef, {
+            timestamp: timestamp
+        });
     }
 }
+
 
 /* Function that deletes all user settings in DB with a batch write */
 async function clearUserSettingsDb() {
@@ -273,15 +278,18 @@ async function clearUserSettingsDb() {
     await batch.commit();
 }
 
+
 function addButtonColour(button, colour) {
     button.style.backgroundColor = colour;
     button.style.color = "white";
 }
 
+
 function removeButtonColour(button) {
     button.style.backgroundColor = GREY;
     button.style.color = "black";
 }
+
 
 function addToUnsavedUsers(user) {
     if (!(unsavedUsers.includes(user))) {
